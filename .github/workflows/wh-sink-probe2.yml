@@ -1,0 +1,26 @@
+name: wh-sink-probe2
+on:
+  push:
+    branches:
+      - probe/annot2
+permissions:
+  contents: read
+  checks: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: create check run with entity-decode probes
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          E1: 'WHP2ent7f3a &lt;i&gt;ENT7f3a&lt;/i&gt; and &lt;details open ontoggle="document.title=String.fromCharCode(87,72,88,50)"&gt;ENTMARK7f3a&lt;/details&gt;'
+          E2: 'WHP2num7f3a &#60;b&#62;NUM7f3a&#60;/b&#62; and &#x3c;u&#x3e;HEX7f3a&#x3c;/u&#x3e;'
+          E3: 'WHP2url7f3a javascript:alert(1) https://evil7f3a.example/p?a=1 www.evil7f3a.example'
+          E4: 'WHP2ref7f3a @caleb-ruthven26 #1 caleb-ruthven26/merge-flow-sandbox#1'
+          E5: 'WHP2dbl7f3a &amp;lt;s&amp;gt;DBL7f3a&amp;lt;/s&amp;gt;'
+        run: |
+          jq -n --arg sha "$SHA" --arg e1 "$E1" --arg e2 "$E2" --arg e3 "$E3" --arg e4 "$E4" --arg e5 "$E5" '{name:"wh-sink-probe2",head_sha:$sha,status:"completed",conclusion:"neutral",output:{title:"wh sink probe 2",summary:"entity and autolink rendering-context probes",annotations:[{path:"probe/sink-target.txt",start_line:1,end_line:1,annotation_level:"warning",title:"WHP2-1",message:$e1},{path:"probe/sink-target.txt",start_line:2,end_line:2,annotation_level:"warning",title:"WHP2-2",message:$e2},{path:"probe/sink-target.txt",start_line:3,end_line:3,annotation_level:"notice",title:"WHP2-3",message:$e3},{path:"probe/sink-target.txt",start_line:4,end_line:4,annotation_level:"notice",title:"WHP2-4",message:$e4},{path:"probe/sink-target.txt",start_line:5,end_line:5,annotation_level:"notice",title:"WHP2-5",message:$e5}]}}' > p.json
+          cat p.json
+          curl -sS -X POST -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/$REPO/check-runs" -d @p.json | head -c 400
