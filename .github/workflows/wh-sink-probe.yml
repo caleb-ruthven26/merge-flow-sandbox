@@ -1,0 +1,26 @@
+name: wh-sink-probe
+on:
+  push:
+    branches:
+      - probe/annot-sink
+  workflow_dispatch:
+permissions:
+  contents: read
+  checks: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: workflow-command annotation
+        run: echo '::warning file=probe/sink-target.txt,line=3,title=WHPROBE7f3a-wc::WHPROBE7f3a-wc <i>ITALWC7f3a</i> "QWC7f3a"'
+      - name: create check run with annotation
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          PROBE1: 'WHPROBE7f3a <i>ITAL7f3a</i> "QUOTE7f3a" <wh-marker data-wh="7f3a"></wh-marker>'
+          PROBE2: 'WHPROBE7f3a-x <details open ontoggle="document.title=String.fromCharCode(87,72,88,55,102,51,97)">WHXMARK7f3a</details>'
+        run: |
+          jq -n --arg sha "$SHA" --arg m1 "$PROBE1" --arg m2 "$PROBE2" '{name:"wh-sink-probe",head_sha:$sha,status:"completed",conclusion:"neutral",output:{title:"wh sink probe",summary:"benign rendering-context probe",annotations:[{path:"probe/sink-target.txt",start_line:2,end_line:2,annotation_level:"warning",title:"WHPROBE7f3a-title",message:$m1,raw_details:$m1},{path:"probe/sink-target.txt",start_line:4,end_line:4,annotation_level:"notice",title:"WHPROBE7f3a-title2",message:$m2,raw_details:$m2}]}}' > payload.json
+          cat payload.json
+          curl -sS -X POST -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/$REPO/check-runs" -d @payload.json | head -c 800
